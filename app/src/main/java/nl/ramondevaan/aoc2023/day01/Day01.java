@@ -45,7 +45,7 @@ public class Day01 {
   }
 
   public long solve2() {
-    return lines.stream().mapToLong(this::calibrationValueByMap).peek(System.out::println).sum();
+    return lines.stream().mapToLong(this::calibrationValueByMap).sum();
   }
 
   private long calibrationValueByMap(final String line) {
