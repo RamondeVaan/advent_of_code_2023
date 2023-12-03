@@ -119,4 +119,8 @@ public class StringIteratorParser {
 
     return builder.toString();
   }
+
+  public int getIndex() {
+    return iterator.getIndex();
+  }
 }
