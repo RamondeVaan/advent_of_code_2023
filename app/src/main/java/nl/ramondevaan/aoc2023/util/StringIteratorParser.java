@@ -79,6 +79,14 @@ public class StringIteratorParser {
     }
   }
 
+  public void exhaust(final char character) {
+    char current = iterator.current();
+
+    while (current == character && current != CharacterIterator.DONE) {
+      current = iterator.next();
+    }
+  }
+
   public int parseInteger() {
     return Integer.parseInt(parseNumber());
   }
