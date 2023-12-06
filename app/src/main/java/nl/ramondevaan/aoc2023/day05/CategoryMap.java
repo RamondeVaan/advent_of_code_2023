@@ -1,6 +1,7 @@
 package nl.ramondevaan.aoc2023.day05;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -14,24 +15,23 @@ public record CategoryMap(String source, String destination, List<RangeMapping> 
     }
 
     public Stream<Range> getDestinationIds(final Range range) {
-        var toMap = List.of(range);
-        var nextToMap = new ArrayList<Range>();
+        final var toMap = new LinkedList<Range>();
+        toMap.add(range);
         final var mapped = new ArrayList<Range>();
 
         for (final var mapping : rangeMappings) {
-            for (Range current : toMap) {
-                final var overlappingRangeOpt = mapping.getOverlappingRange(current);
-                if (overlappingRangeOpt.isPresent()) {
-                    final var overlappingRange = overlappingRangeOpt.get();
-                    final var remaining = current.withoutRange(overlappingRange.getSource()).toList();
-                    nextToMap.addAll(remaining);
-                    mapped.add(overlappingRange.getDestination());
-                } else {
-                    nextToMap.add(current);
+            final var iterator = toMap.listIterator();
+            while (iterator.hasNext()) {
+                final var current = iterator.next();
+                final var overlapOpt = mapping.getSource().getOverlap(current);
+                if (overlapOpt.isPresent()) {
+                    final var overlap = overlapOpt.get();
+                    iterator.remove();
+                    mapped.add(overlap.offset(mapping.getOffset()));
+                    current.withoutRange(overlap).forEach(iterator::add);
+                    break;
                 }
             }
-            toMap = nextToMap;
-            nextToMap = new ArrayList<>();
         }
 
         mapped.addAll(toMap);

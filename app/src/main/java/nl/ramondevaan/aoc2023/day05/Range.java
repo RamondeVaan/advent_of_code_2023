@@ -2,6 +2,7 @@ package nl.ramondevaan.aoc2023.day05;
 
 import lombok.*;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Getter
@@ -17,6 +18,25 @@ public class Range {
         this.start = start;
         this.end = end;
         this.length = end - start;
+    }
+
+    public boolean contains(final long value) {
+        return start <= value && value < end;
+    }
+
+    public Optional<Range> getOverlap(final Range other) {
+        final var maxStart = Math.max(start, other.start);
+        final var minEnd = Math.min(end, other.end);
+
+        if (maxStart >= minEnd) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new Range(maxStart, minEnd));
+    }
+
+    public Range offset(final long offset) {
+        return new Range(start + offset, end + offset, length);
     }
 
     public Stream<Range> withoutRange(final Range other) {
@@ -37,13 +57,6 @@ public class Range {
         }
 
         return Stream.of(new Range(start, other.start), new Range(other.end, end));
-    }
-
-    public static Range byEnd(final long start, final long end) {
-        if (end <= start) {
-            throw new IllegalArgumentException();
-        }
-        return new Range(start, end, end - start);
     }
 
     public static Range byLength(final long start, final long length) {
