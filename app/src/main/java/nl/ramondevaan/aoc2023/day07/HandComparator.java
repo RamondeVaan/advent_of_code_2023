@@ -2,9 +2,8 @@ package nl.ramondevaan.aoc2023.day07;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
 import java.util.Comparator;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static nl.ramondevaan.aoc2023.day07.HandType.*;
 
@@ -56,25 +55,28 @@ public class HandComparator implements Comparator<Hand> {
     }
 
     private HandType parseWithoutJoker(final Hand hand) {
-        final var handWithoutJokers = new Hand(hand.getCards().stream().filter(card -> card != Card.JOKER));
-        final var cardOccurenceMap = handWithoutJokers.getCards().stream()
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        final var cardOccurrence = new int[Card.values().length];
+        for (final var card : hand.getCards()) {
+            if (card != Card.JOKER) {
+                cardOccurrence[card.ordinal()]++;
+            }
+        }
 
-        final var occurrenceValues = cardOccurenceMap.values().stream()
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        final var occurrenceValues = new int[6];
+        Arrays.stream(cardOccurrence).forEach(i -> occurrenceValues[i]++);
 
-        if (occurrenceValues.getOrDefault(5L, 0L) >= 1) {
+        if (occurrenceValues[5] >= 1) {
             return HandType.FIVE_OF_A_KIND;
-        } else if (occurrenceValues.getOrDefault(4L, 0L) >= 1) {
+        } else if (occurrenceValues[4] >= 1) {
             return HandType.FOUR_OF_A_KIND;
-        } else if (occurrenceValues.getOrDefault(3L, 0L) >= 1) {
-            if (occurrenceValues.getOrDefault(2L, 0L) >= 1) {
+        } else if (occurrenceValues[3] >= 1) {
+            if (occurrenceValues[2] >= 1) {
                 return HandType.FULL_HOUSE;
             }
             return HandType.THREE_OF_A_KIND;
-        } else if (occurrenceValues.getOrDefault(2L, 0L) == 2L) {
+        } else if (occurrenceValues[2] == 2) {
             return HandType.TWO_PAIR;
-        } else if (occurrenceValues.getOrDefault(2L, 0L) >= 1) {
+        } else if (occurrenceValues[2] >= 1) {
             return HandType.ONE_PAIR;
         }
 
