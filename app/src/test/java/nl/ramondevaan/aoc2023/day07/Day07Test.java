@@ -25,11 +25,12 @@ class Day07Test {
 
     @Test
     void puzzle1() {
-        assertEquals(0L, day07.solve1());
+        assertEquals(251216224L, day07.solve1());
     }
 
     @Test
+    //251137914 too high
     void puzzle2() {
-        assertEquals(0L, day07.solve2());
+        assertEquals(250825971L, day07.solve2());
     }
 }
