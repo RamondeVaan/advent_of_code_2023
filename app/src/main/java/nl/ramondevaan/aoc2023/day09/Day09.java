@@ -21,8 +21,7 @@ public class Day09 {
 
     public long solve2() {
         return report.getHistories().stream()
-                .map(ImmutableIntArray::reversed)
-                .mapToLong(this::next)
+                .mapToLong(this::previous)
                 .sum();
     }
 
@@ -31,5 +30,12 @@ public class Day09 {
             return values.getFirst();
         }
         return values.getLast() + next(values.difference());
+    }
+
+    private long previous(final ImmutableIntArray values) {
+        if (values.allEqual()) {
+            return values.getFirst();
+        }
+        return values.getFirst() - previous(values.difference());
     }
 }
