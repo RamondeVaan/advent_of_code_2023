@@ -2,71 +2,41 @@ package nl.ramondevaan.aoc2023.day10;
 
 import nl.ramondevaan.aoc2023.util.Coordinate;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.BiFunction;
 
 public class Day10 {
 
     private final PipeMap pipeMap;
-    private final DistanceMap distanceMap;
+    private final List<Coordinate> path;
 
     public Day10(final List<String> lines) {
         final var pipeMapParser = new PipeMapParser();
-        final var distanceMapParser = new DistanceMapParser();
+        final var distanceMapParser = new PathParser();
         this.pipeMap = pipeMapParser.parse(lines);
-        this.distanceMap = distanceMapParser.parse(pipeMap);
+        this.path = distanceMapParser.parse(pipeMap);
     }
 
     public long solve1() {
-        final var start = pipeMap.getStart();
-        final var max = pipeMap.get(start).getDirections().stream()
-                .map(dir -> dir.apply(start))
-                .mapToInt(distanceMap.getDistances()::valueAt)
-                .max()
-                .orElseThrow();
-        return (max + 1) / 2;
+        return path.size() / 2;
     }
 
     public long solve2() {
-        final BiFunction<Direction, Pipe, Set<Direction>> insideFun = distanceMap.isClockwise() ?
-                (direction, pipe) -> pipe.getRightAdjacent(direction) : (direction, pipe) -> pipe.getLeftAdjacent(direction);
+        final var isPath = new boolean[this.pipeMap.getRows()][this.pipeMap.getColumns()];
+        path.forEach(coordinate -> isPath[coordinate.row()][coordinate.column()] = true);
 
-        final var insideCoordinates = new HashSet<Coordinate>();
-        var fromDirection = distanceMap.getStartFromDirection();
-        for (final var coordinate : distanceMap.getPath()) {
-            final var pipe = pipeMap.get(coordinate);
-            final var direction = pipe.next(fromDirection);
-            insideFun.apply(fromDirection, pipe).stream()
-                    .map(dir -> dir.apply(coordinate))
-                    .filter(c -> distanceMap.getDistances().valueAt(c) == -1)
-                    .forEach(insideCoordinates::add);
-            fromDirection = direction.opposite();
-        }
+        var count = 0L;
+        for (int row = 0; row < isPath.length; row++) {
+            var inside = false;
 
-        return expandAndCount(insideCoordinates);
-    }
-
-    private long expandAndCount(final Set<Coordinate> coordinates) {
-        final var builder = distanceMap.getDistances().toBuilder();
-
-        long count = coordinates.size();
-        var current = coordinates;
-        var next = new HashSet<Coordinate>();
-
-        while (!current.isEmpty()) {
-            current.forEach(c -> builder.set(c.row(), c.column(), -2));
-            for (final Coordinate coordinate : current) {
-                coordinate.allNeighbors()
-                        .filter(builder::isWithinRange)
-                        .filter(c -> builder.get(c.row(), c.column()) == -1)
-                        .forEach(next::add);
+            for (int column = 0; column < isPath[0].length; column++) {
+                if (isPath[row][column]) {
+                    if (pipeMap.get(Coordinate.of(row, column)).isNorth()) {
+                        inside = !inside;
+                    }
+                } else if (inside) {
+                    count++;
+                }
             }
-
-            count += next.size();
-            current = next;
-            next = new HashSet<>();
         }
 
         return count;

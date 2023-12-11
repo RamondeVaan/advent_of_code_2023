@@ -1,91 +1,38 @@
 package nl.ramondevaan.aoc2023.day10;
 
+import lombok.RequiredArgsConstructor;
 import nl.ramondevaan.aoc2023.util.Coordinate;
 
+@RequiredArgsConstructor
 public enum Direction {
-    NORTH {
+    NORTH(-1, 0) {
         @Override
         public Direction opposite() {
             return SOUTH;
         }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() - 1, coordinate.column());
-        }
-    }, EAST {
+    }, EAST(0, 1) {
         @Override
         public Direction opposite() {
             return WEST;
         }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row(), coordinate.column() + 1);
-        }
-    }, SOUTH {
+    }, SOUTH(1, 0) {
         @Override
         public Direction opposite() {
             return NORTH;
         }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() + 1, coordinate.column());
-        }
-    }, WEST {
+    }, WEST(0, -1) {
         @Override
         public Direction opposite() {
             return EAST;
         }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row(), coordinate.column() - 1);
-        }
-    }, NORTH_EAST {
-        @Override
-        public Direction opposite() {
-            return SOUTH_WEST;
-        }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() - 1, coordinate.column() + 1);
-        }
-    }, SOUTH_EAST {
-        @Override
-        public Direction opposite() {
-            return NORTH_WEST;
-        }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() + 1, coordinate.column() + 1);
-        }
-    }, SOUTH_WEST {
-        @Override
-        public Direction opposite() {
-            return NORTH_EAST;
-        }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() + 1, coordinate.column() - 1);
-        }
-    }, NORTH_WEST {
-        @Override
-        public Direction opposite() {
-            return SOUTH_EAST;
-        }
-
-        @Override
-        public Coordinate apply(final Coordinate coordinate) {
-            return Coordinate.of(coordinate.row() - 1, coordinate.column() - 1);
-        }
     };
+
+    private final int rowDiff;
+    private final int columnDiff;
 
     public abstract Direction opposite();
 
-    public abstract Coordinate apply(final Coordinate coordinate);
+    public Coordinate apply(final Coordinate coordinate) {
+        return Coordinate.of(coordinate.row() + rowDiff, coordinate.column() + columnDiff);
+    }
 }

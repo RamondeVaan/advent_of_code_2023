@@ -24,7 +24,7 @@ public class PipeMap {
     }
 
     public static class Builder {
-        private final Pipe[][] pipes;
+        private Pipe[][] pipes;
         @Getter
         private Coordinate start;
 
@@ -51,7 +51,9 @@ public class PipeMap {
         }
 
         public PipeMap build() {
-            return new PipeMap(start, pipes.length, pipes[0].length, pipes);
+            final var ret = new PipeMap(start, pipes.length, pipes[0].length, pipes);
+            this.pipes = null;
+            return ret;
         }
     }
 }
