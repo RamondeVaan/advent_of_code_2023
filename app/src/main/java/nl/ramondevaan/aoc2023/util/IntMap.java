@@ -183,6 +183,11 @@ public class IntMap {
       return this;
     }
 
+    public boolean isWithinRange(final Coordinate coordinate) {
+      return coordinate.row() >= 0 && coordinate.row() < rows &&
+              coordinate.column() >= 0 && coordinate.column() < columns;
+    }
+
     public IntMap build() {
       final var ret = new IntMap(values);
       this.values = null;
