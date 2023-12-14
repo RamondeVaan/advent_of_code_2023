@@ -1,9 +1,12 @@
 package nl.ramondevaan.aoc2023.util;
 
+import lombok.EqualsAndHashCode;
+
 import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+@EqualsAndHashCode
 public class IntMap {
 
   private final int[][] map;
