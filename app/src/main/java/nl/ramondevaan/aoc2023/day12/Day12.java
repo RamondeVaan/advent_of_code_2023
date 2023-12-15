@@ -1,8 +1,7 @@
 package nl.ramondevaan.aoc2023.day12;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static nl.ramondevaan.aoc2023.day12.SpringCondition.DAMAGED;
 
@@ -16,28 +15,38 @@ public class Day12 {
     }
 
     public long solve1() {
-        return records.stream().mapToLong(record -> solveCached(record, new HashMap<>())).sum();
+        return records.stream().mapToLong(record -> solveCached(record, initializeCache(record))).sum();
     }
 
     public long solve2() {
         return records.stream()
                 .map(record -> record.unfold(5))
-                .mapToLong(record -> solveCached(record, new HashMap<>()))
+                .mapToLong(record -> solveCached(record, initializeCache(record)))
                 .sum();
     }
 
-    private long solveCached(final Record record, final Map<Record, Long> cache) {
-        final var cached = cache.get(record);
-        if (cached != null) {
+    private long[][] initializeCache(final Record record) {
+        final var cache = new long[record.springConditions().size() + 1][record.damagedGroups().size() + 1];
+
+        for (final long[] longs : cache) {
+            Arrays.fill(longs, -1);
+        }
+
+        return cache;
+    }
+
+    private long solveCached(final Record record, final long[][] cache) {
+        final var cached = cache[record.springConditions().size()][record.damagedGroups().size()];
+        if (cached >= 0) {
             return cached;
         }
 
         final var total = solve(record, cache);
-        cache.put(record, total);
+        cache[record.springConditions().size()][record.damagedGroups().size()] = total;
         return total;
     }
 
-    private long solve(final Record record, final Map<Record, Long> cache) {
+    private long solve(final Record record, final long[][] cache) {
         if (record.damagedGroups().isEmpty()) {
             return record.hasDamagedSpring() ? 0 : 1;
         }
