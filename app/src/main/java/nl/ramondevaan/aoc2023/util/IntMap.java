@@ -165,6 +165,10 @@ public class IntMap {
       return this;
     }
 
+    public boolean hasFlag(int row, int column, int flag) {
+      return (values[row][column] & flag) == flag;
+    }
+
     public int get(final int row, final int column) {
       return values[row][column];
     }

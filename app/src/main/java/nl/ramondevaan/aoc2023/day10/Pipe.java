@@ -2,6 +2,7 @@ package nl.ramondevaan.aoc2023.day10;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import nl.ramondevaan.aoc2023.util.Direction;
 
 import java.util.Map;
 import java.util.Set;

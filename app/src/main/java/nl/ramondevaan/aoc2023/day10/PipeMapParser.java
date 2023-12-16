@@ -1,6 +1,7 @@
 package nl.ramondevaan.aoc2023.day10;
 
 import nl.ramondevaan.aoc2023.util.Coordinate;
+import nl.ramondevaan.aoc2023.util.Direction;
 import nl.ramondevaan.aoc2023.util.Parser;
 
 import java.util.Arrays;
