@@ -13,7 +13,6 @@ public class Day17 {
     private final Coordinate source;
     private final Coordinate target;
 
-
     public Day17(final List<String> lines) {
         final var parser = new IntMapParser();
         heatLossMap = parser.parse(lines);
