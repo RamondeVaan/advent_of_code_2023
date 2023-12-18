@@ -55,6 +55,11 @@ public class Day17 {
                     continue;
                 }
                 visited[newCoordinate.row()][newCoordinate.column()][potentialStep.left.ordinal()][potentialStep.right] = true;
+                if (potentialStep.right >= minBlocksInDirectionMinusOne) {
+                    for (int i = potentialStep.right + 1; i < maxBlocksInDirection; i++) {
+                        visited[newCoordinate.row()][newCoordinate.column()][potentialStep.left.ordinal()][i] = true;
+                    }
+                }
                 queue.add(new Step(newCoordinate, potentialStep.left, potentialStep.right, newHeatLoss));
             }
         } while ((current = queue.poll()) != null);
