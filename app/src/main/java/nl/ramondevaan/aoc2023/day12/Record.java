@@ -3,27 +3,28 @@ package nl.ramondevaan.aoc2023.day12;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static nl.ramondevaan.aoc2023.day12.SpringCondition.UNKNOWN;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Record {
 
     private final SpringCondition[] springConditions;
-    private final List<Integer> damagedGroups;
-
-    public List<Integer> damagedGroups() {
-        return damagedGroups;
-    }
+    private final int[] damagedGroups;
 
     public SpringCondition getSpringCondition(final int index) {
         return springConditions[index];
     }
 
+    public int getDamagedGroup(final int index) {
+        return damagedGroups[index];
+    }
+
     public int numberOfSpringConditions() {
         return springConditions.length;
+    }
+
+    public int numberOfDamagedGroups() {
+        return damagedGroups.length;
     }
 
     public Record unfold(final int times) {
@@ -38,28 +39,27 @@ public class Record {
             dest += springConditions.length;
         } while (dest < newSpringConditions.length);
 
-        final var newDamagedGroups = new ArrayList<Integer>(damagedGroups.size() * times);
-        newDamagedGroups.addAll(damagedGroups);
+        final var newDamagedGroups = new int[damagedGroups.length * times];
 
-        for (int i = 1; i < times; i++) {
-            newDamagedGroups.addAll(damagedGroups);
+        for (int i = 0; i < times; i++) {
+            System.arraycopy(damagedGroups, 0, newDamagedGroups, damagedGroups.length * i, damagedGroups.length);
         }
 
-        return new Record(newSpringConditions, List.copyOf(newDamagedGroups));
+        return new Record(newSpringConditions, newDamagedGroups);
     }
 
-    public static Builder builder(final int numberOfSpringConditions) {
-        return new Builder(numberOfSpringConditions);
+    public static Builder builder(final int numberOfSpringConditions, final int numberOfDamagedGroups) {
+        return new Builder(numberOfSpringConditions, numberOfDamagedGroups);
     }
 
     public static class Builder {
 
         private SpringCondition[] springConditions;
-        private List<Integer> damagedGroups;
+        private int[] damagedGroups;
 
-        public Builder(final int numberOfSpringConditions) {
+        public Builder(final int numberOfSpringConditions, final int numberOfDamagedGroups) {
             this.springConditions = new SpringCondition[numberOfSpringConditions];
-            this.damagedGroups = new ArrayList<>();
+            this.damagedGroups = new int[numberOfDamagedGroups];
         }
 
         public Builder set(final int index, final SpringCondition springCondition) {
@@ -67,13 +67,16 @@ public class Record {
             return this;
         }
 
-        public Builder add(final int damagedGroup) {
-            damagedGroups.add(damagedGroup);
+        public Builder set(final int index, final int damagedGroup) {
+            damagedGroups[index] = damagedGroup;
             return this;
         }
 
         public Record build() {
-            return new Record(springConditions, damagedGroups);
+            final var ret = new Record(springConditions, damagedGroups);
+            this.springConditions = null;
+            this.damagedGroups = null;
+            return ret;
         }
     }
 }

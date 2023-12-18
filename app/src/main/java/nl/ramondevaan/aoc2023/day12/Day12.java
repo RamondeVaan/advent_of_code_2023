@@ -36,17 +36,14 @@ public class Day12 {
     }
 
     private long solve(final Record record) {
-        final var dp = new long[record.damagedGroups().size() + 1][record.numberOfSpringConditions() + 1];
+        final var dp = new long[record.numberOfDamagedGroups() + 1][record.numberOfSpringConditions() + 1];
 
         setFirstRow(dp, record);
-
-        final var damagedGroupIterator = record.damagedGroups().reversed().listIterator();
-
         tryFillLastGroup(dp, record);
 
         var sum = record.numberOfSpringConditions();
-        for (int i = 1; i < dp.length; i++) {
-            final var group = damagedGroupIterator.next();
+        for (int i = record.numberOfDamagedGroups() - 1; i >= 0; i--) {
+            final var group = record.getDamagedGroup(i);
             sum -= group;
             for (int springIndex = sum, springIndexMinusOne = sum - 1; springIndex > 0; springIndex = springIndexMinusOne--) {
                 switch (record.getSpringCondition(springIndexMinusOne)) {
@@ -57,37 +54,38 @@ public class Day12 {
                         dp[i][springIndexMinusOne] = dp[i][springIndex];
                     case DAMAGED:
                         if (canMatch(record, springIndex, springIndexMinusOne + group)) {
-                            dp[i][springIndexMinusOne] += dp[i - 1][springIndex + group];
+                            dp[i][springIndexMinusOne] += dp[i + 1][springIndex + group];
                         }
                 }
             }
         }
 
-        return dp[record.damagedGroups().size()][0];
+        return dp[0][0];
     }
 
     private void setFirstRow(final long[][] dp, final Record record) {
-        dp[0][record.numberOfSpringConditions()] = 1;
+        final var numberOfDamagedGroups = record.numberOfDamagedGroups();
+        dp[numberOfDamagedGroups][record.numberOfSpringConditions()] = 1;
 
-        for (int j = dp[0].length - 2; j >= 0; j--) {
+        for (int j = dp[numberOfDamagedGroups].length - 2; j >= 0; j--) {
             if (record.getSpringCondition(j) == DAMAGED) {
                 break;
             }
-            dp[0][j] = 1;
+            dp[numberOfDamagedGroups][j] = 1;
         }
     }
 
     private void tryFillLastGroup(final long[][] dp, final Record record) {
         final var springConditions = record.numberOfSpringConditions();
-        final var lastDamagedGroup = record.damagedGroups().getLast();
-        final var from = springConditions - lastDamagedGroup;
+        final var lastGroupIndex = record.numberOfDamagedGroups() - 1;
+        final var from = springConditions - record.getDamagedGroup(lastGroupIndex);
         if (record.getSpringCondition(from) != OPERATIONAL) {
             for (int j = from + 1; j < springConditions; j++) {
                 if (record.getSpringCondition(j) == OPERATIONAL) {
                     return;
                 }
             }
-            dp[1][from] = dp[0][springConditions];
+            dp[lastGroupIndex][from] = dp[record.numberOfDamagedGroups()][springConditions];
         }
     }
 
