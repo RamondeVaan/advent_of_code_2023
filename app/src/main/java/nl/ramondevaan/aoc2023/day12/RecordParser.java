@@ -3,57 +3,42 @@ package nl.ramondevaan.aoc2023.day12;
 import nl.ramondevaan.aoc2023.util.Parser;
 import nl.ramondevaan.aoc2023.util.StringIteratorParser;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static nl.ramondevaan.aoc2023.day12.SpringCondition.*;
 
 public class RecordParser implements Parser<String, Record> {
 
-    private final char SEPARATOR = ' ';
-
     @Override
     public Record parse(final String toParse) {
-        final var parser = new StringIteratorParser(toParse);
+        final var separatorIndex = toParse.indexOf(' ');
+        final var builder = Record.builder(separatorIndex);
 
-        final var springConditions = parseSpringConditions(parser);
-        parser.consume(SEPARATOR);
-        final var damagedGroups = parseDamagedGroups(parser);
-        parser.verifyIsDone();
+        parseSpringConditions(builder, toParse.substring(0, separatorIndex));
+        parseDamagedGroups(builder, toParse.substring(separatorIndex + 1));
 
-        return new Record(springConditions, damagedGroups);
+        return builder.build();
     }
 
-    private List<SpringCondition> parseSpringConditions(final StringIteratorParser parser) {
-        final var springConditions = new ArrayList<SpringCondition>();
+    private void parseSpringConditions(final Record.Builder builder, final String toParse) {
+        final var chars = toParse.toCharArray();
 
-        char current = parser.current();
-
-        do {
-            final var value = switch (current) {
+        for (int i = 0; i < chars.length; i++) {
+            final var value = switch (chars[i]) {
                 case '.' -> OPERATIONAL;
                 case '#' -> DAMAGED;
                 case '?' -> UNKNOWN;
                 default -> throw new IllegalArgumentException();
             };
-            springConditions.add(value);
-
-            parser.consume();
-            current = parser.current();
-        } while (current != SEPARATOR);
-
-        return springConditions;
+            builder.set(i, value);
+        }
     }
 
-    private List<Integer> parseDamagedGroups(final StringIteratorParser parser) {
-        final var damagedGroups = new ArrayList<Integer>();
-        damagedGroups.add(parser.parseInteger());
+    private void parseDamagedGroups(final Record.Builder builder, final String toParse) {
+        final var parser = new StringIteratorParser(toParse);
+        builder.add(parser.parseInteger());
 
         do {
             parser.consume(',');
-            damagedGroups.add(parser.parseInteger());
+            builder.add(parser.parseInteger());
         } while (parser.hasNext());
-
-        return damagedGroups;
     }
 }

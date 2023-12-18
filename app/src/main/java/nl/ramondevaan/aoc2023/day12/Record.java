@@ -1,56 +1,79 @@
 package nl.ramondevaan.aoc2023.day12;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import static nl.ramondevaan.aoc2023.day12.SpringCondition.*;
+import static nl.ramondevaan.aoc2023.day12.SpringCondition.UNKNOWN;
 
-public record Record(List<SpringCondition> springConditions, List<Integer> damagedGroups) {
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class Record {
 
-    public Record skipOneSpringCondition() {
-        return new Record(springConditions.subList(1, springConditions.size()), damagedGroups);
+    private final SpringCondition[] springConditions;
+    private final List<Integer> damagedGroups;
+
+    public List<Integer> damagedGroups() {
+        return damagedGroups;
     }
 
-    public Record next(final int skipSpringConditions) {
-        final var newSpringConditions = springConditions.subList(skipSpringConditions, springConditions.size());
-        final var newDamagedGroups = damagedGroups.subList(1, damagedGroups.size());
-        return new Record(newSpringConditions, newDamagedGroups);
+    public SpringCondition getSpringCondition(final int index) {
+        return springConditions[index];
     }
 
-    public boolean hasDamagedSpring() {
-        return springConditions.contains(DAMAGED);
-    }
-
-    public boolean hasOperational(final int groupSize) {
-        final var to = Math.min(groupSize, springConditions.size());
-
-        for (int i = 0; i < to; i++) {
-            final var springCondition = springConditions.get(i);
-            if (springCondition == OPERATIONAL) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public SpringCondition firstSpringCondition() {
-        return springConditions.getFirst();
+    public int numberOfSpringConditions() {
+        return springConditions.length;
     }
 
     public Record unfold(final int times) {
-        final var newSpringConditions = new ArrayList<SpringCondition>(springConditions.size() * times + times - 1);
-        newSpringConditions.addAll(springConditions);
+        final var newSpringConditions = new SpringCondition[springConditions.length * times + times - 1];
+
+        System.arraycopy(springConditions, 0, newSpringConditions, 0, springConditions.length);
+        var dest = springConditions.length;
+
+        do {
+            newSpringConditions[dest++] = UNKNOWN;
+            System.arraycopy(springConditions, 0, newSpringConditions, dest, springConditions.length);
+            dest += springConditions.length;
+        } while (dest < newSpringConditions.length);
 
         final var newDamagedGroups = new ArrayList<Integer>(damagedGroups.size() * times);
         newDamagedGroups.addAll(damagedGroups);
 
         for (int i = 1; i < times; i++) {
-            newSpringConditions.add(UNKNOWN);
-            newSpringConditions.addAll(springConditions);
             newDamagedGroups.addAll(damagedGroups);
         }
 
-        return new Record(List.copyOf(newSpringConditions), List.copyOf(newDamagedGroups));
+        return new Record(newSpringConditions, List.copyOf(newDamagedGroups));
+    }
+
+    public static Builder builder(final int numberOfSpringConditions) {
+        return new Builder(numberOfSpringConditions);
+    }
+
+    public static class Builder {
+
+        private SpringCondition[] springConditions;
+        private List<Integer> damagedGroups;
+
+        public Builder(final int numberOfSpringConditions) {
+            this.springConditions = new SpringCondition[numberOfSpringConditions];
+            this.damagedGroups = new ArrayList<>();
+        }
+
+        public Builder set(final int index, final SpringCondition springCondition) {
+            springConditions[index] = springCondition;
+            return this;
+        }
+
+        public Builder add(final int damagedGroup) {
+            damagedGroups.add(damagedGroup);
+            return this;
+        }
+
+        public Record build() {
+            return new Record(springConditions, damagedGroups);
+        }
     }
 }

@@ -36,60 +36,68 @@ public class Day12 {
     }
 
     private long solve(final Record record) {
-        final var cache = new long[record.damagedGroups().size() + 1][record.springConditions().size() + 1];
-        final var reversed = record.springConditions().reversed().toArray(SpringCondition[]::new);
+        final var dp = new long[record.damagedGroups().size() + 1][record.numberOfSpringConditions() + 1];
 
-        cache[0][0] = 1;
-
-        var springIndex = 1;
-        for (final var springCondition : record.springConditions().reversed()) {
-            if (springCondition == DAMAGED) {
-                break;
-            }
-            cache[0][springIndex++] = 1;
-        }
+        setFirstRow(dp, record);
 
         final var damagedGroupIterator = record.damagedGroups().reversed().listIterator();
 
-        final var lastDamagedGroup = record.damagedGroups().getLast();
-        outer: if (reversed[lastDamagedGroup - 1] != OPERATIONAL) {
-            for (int j = 0; j < lastDamagedGroup; j++) {
-                if (reversed[j] == OPERATIONAL) {
-                    break outer;
-                }
-            }
-            cache[1][lastDamagedGroup] = cache[0][0];
-        }
+        tryFillLastGroup(dp, record);
 
-        var sum = 0;
-        for (int i = 1; i < cache.length; i++) {
+        var sum = record.numberOfSpringConditions();
+        for (int i = 1; i < dp.length; i++) {
             final var group = damagedGroupIterator.next();
-            sum += group;
-            for (int j = sum, jp1 = sum + 1; jp1 < cache[i].length; j = jp1++) {
-                switch (reversed[j]) {
+            sum -= group;
+            for (int springIndex = sum, springIndexMinusOne = sum - 1; springIndex > 0; springIndex = springIndexMinusOne--) {
+                switch (record.getSpringCondition(springIndexMinusOne)) {
                     case OPERATIONAL:
-                        cache[i][jp1] = cache[i][j];
+                        dp[i][springIndexMinusOne] = dp[i][springIndex];
                         break;
                     case UNKNOWN:
-                        cache[i][jp1] = cache[i][j];
+                        dp[i][springIndexMinusOne] = dp[i][springIndex];
                     case DAMAGED:
-                        if (canMatch(reversed, jp1 - group, jp1)) {
-                            cache[i][jp1] += cache[i - 1][j - group];
+                        if (canMatch(record, springIndex, springIndexMinusOne + group)) {
+                            dp[i][springIndexMinusOne] += dp[i - 1][springIndex + group];
                         }
                 }
             }
         }
 
-        return cache[record.damagedGroups().size()][record.springConditions().size()];
+        return dp[record.damagedGroups().size()][0];
     }
 
-    private boolean canMatch(final SpringCondition[] conditions, final int from ,final int to) {
+    private void setFirstRow(final long[][] dp, final Record record) {
+        dp[0][record.numberOfSpringConditions()] = 1;
+
+        for (int j = dp[0].length - 2; j >= 0; j--) {
+            if (record.getSpringCondition(j) == DAMAGED) {
+                break;
+            }
+            dp[0][j] = 1;
+        }
+    }
+
+    private void tryFillLastGroup(final long[][] dp, final Record record) {
+        final var springConditions = record.numberOfSpringConditions();
+        final var lastDamagedGroup = record.damagedGroups().getLast();
+        final var from = springConditions - lastDamagedGroup;
+        if (record.getSpringCondition(from) != OPERATIONAL) {
+            for (int j = from + 1; j < springConditions; j++) {
+                if (record.getSpringCondition(j) == OPERATIONAL) {
+                    return;
+                }
+            }
+            dp[1][from] = dp[0][springConditions];
+        }
+    }
+
+    private boolean canMatch(final Record record, final int from ,final int to) {
         for (int i = from; i < to; i++) {
-            if (conditions[i] == OPERATIONAL) {
+            if (record.getSpringCondition(i) == OPERATIONAL) {
                 return false;
             }
         }
 
-        return conditions[from - 1] != DAMAGED;
+        return record.getSpringCondition(to) != DAMAGED;
     }
 }
