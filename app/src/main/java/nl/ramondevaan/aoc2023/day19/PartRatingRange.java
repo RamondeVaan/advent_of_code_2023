@@ -1,45 +1,42 @@
 package nl.ramondevaan.aoc2023.day19;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import java.util.EnumMap;
 
-@Getter
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+import static nl.ramondevaan.aoc2023.day19.Category.*;
+
 public class PartRatingRange {
-    private final Range x;
-    private final Range m;
-    private final Range a;
-    private final Range s;
+
+    private final EnumMap<Category, Range> valuesByCategory;
 
     public PartRatingRange(final int min, final int max) {
-        x = new Range(min, max + 1);
-        m = new Range(min, max + 1);
-        a = new Range(min, max + 1);
-        s = new Range(min, max + 1);
+        valuesByCategory = new EnumMap<>(Category.class);
+        valuesByCategory.put(X, new Range(min, max + 1));
+        valuesByCategory.put(M, new Range(min, max + 1));
+        valuesByCategory.put(A, new Range(min, max + 1));
+        valuesByCategory.put(S, new Range(min, max + 1));
     }
 
-    public PartRatingRange withX(final Range range) {
-        return new PartRatingRange(range, m, a, s);
+    private PartRatingRange(final EnumMap<Category, Range> valuesByCategory) {
+        this.valuesByCategory = valuesByCategory;
     }
 
-    public PartRatingRange withM(final Range range) {
-        return new PartRatingRange(x, range, a, s);
+    public PartRatingRange with(final Category category, final Range range) {
+        final var newValuesByCategory = new EnumMap<>(valuesByCategory);
+        newValuesByCategory.put(category, range);
+        return new PartRatingRange(newValuesByCategory);
     }
 
-    public PartRatingRange withA(final Range range) {
-        return new PartRatingRange(x, m, range, s);
-    }
-
-    public PartRatingRange withS(final Range range) {
-        return new PartRatingRange(x, m, a, range);
+    public Range get(final Category category) {
+        return valuesByCategory.get(category);
     }
 
     public boolean isEmpty() {
-        return x.isEmpty() || m.isEmpty() || a.isEmpty() || s.isEmpty();
+        return valuesByCategory.values().stream().anyMatch(Range::isEmpty);
     }
 
     public long size() {
-        return (long) x.size() * m.size() * a.size() * s.size();
+        return valuesByCategory.values().stream()
+                .mapToLong(Range::size)
+                .reduce(1L, (left, right) -> left * right);
     }
 }

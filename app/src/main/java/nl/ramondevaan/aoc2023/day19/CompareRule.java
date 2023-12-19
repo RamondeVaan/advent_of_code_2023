@@ -8,13 +8,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public abstract class CompareRule implements Rule {
 
+    protected final Category category;
     protected final int compareTo;
     protected final Result result;
 
 
     @Override
     public final Result apply(final PartRating partRating) {
-        if(applies(getValue(partRating), this.compareTo)) {
+        if(applies(partRating.get(category), this.compareTo)) {
             return result;
         }
 
@@ -23,14 +24,10 @@ public abstract class CompareRule implements Rule {
 
     @Override
     public final List<RangeResult> apply(final PartRatingRange range) {
-        final var map = applies(getRange(range), compareTo);
-        return List.of(new RangeResult(withRange(range, map.get(false)), new NotApplicableResult()),
-                new RangeResult(withRange(range, map.get(true)), result));
+        final var map = applies(range.get(category), compareTo);
+        return List.of(new RangeResult(range.with(category, map.get(false)), new NotApplicableResult()),
+                new RangeResult(range.with(category, map.get(true)), result));
     }
-
-    protected abstract int getValue(final PartRating partRating);
-    protected abstract Range getRange(final PartRatingRange partRatingRange);
-    protected abstract PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range);
 
     protected abstract boolean applies(final int value, final int compareTo);
 

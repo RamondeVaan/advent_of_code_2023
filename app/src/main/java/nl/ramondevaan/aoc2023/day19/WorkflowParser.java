@@ -6,6 +6,8 @@ import nl.ramondevaan.aoc2023.util.StringIteratorParser;
 import java.util.ArrayList;
 import java.util.List;
 
+import static nl.ramondevaan.aoc2023.day19.Category.*;
+
 public class WorkflowParser implements Parser<String, Workflow> {
     @Override
     public Workflow parse(final String toParse) {
@@ -37,12 +39,15 @@ public class WorkflowParser implements Parser<String, Workflow> {
         final String variableName = parser.parseString();
 
         return switch (variableName) {
-            case "x", "m", "a", "s" -> parseComparisonRule(parser, variableName);
+            case "x" -> parseComparisonRule(parser, X);
+            case "m" -> parseComparisonRule(parser, M);
+            case "a" -> parseComparisonRule(parser, A);
+            case "s" -> parseComparisonRule(parser, S);
             default -> new ResultRule(parseResult(variableName));
         };
     }
 
-    private Rule parseComparisonRule(final StringIteratorParser parser, final String variable) {
+    private Rule parseComparisonRule(final StringIteratorParser parser, final Category category) {
         final var comparison = parser.current();
         parser.consume();
         final var value = parser.parseInteger();
@@ -50,148 +55,8 @@ public class WorkflowParser implements Parser<String, Workflow> {
         final var result = parseResult(parser.parseString());
 
         return switch (comparison) {
-            case '<' -> getLessThanRule(variable, value, result);
-            case '>' -> getGreaterThanRule(variable, value, result);
-            default -> throw new IllegalArgumentException();
-        };
-    }
-
-    private LessThanRule getLessThanRule(final String variable, final int value, final Result result) {
-        return switch (variable) {
-            case "x" -> new LessThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.x();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getX();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withX(range);
-                }
-            };
-            case "m" -> new LessThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.m();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getM();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withM(range);
-                }
-            };
-            case "a" -> new LessThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.a();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getA();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withA(range);
-                }
-            };
-            case "s" -> new LessThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.s();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getS();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withS(range);
-                }
-            };
-            default -> throw new IllegalArgumentException();
-        };
-    }
-
-    private GreaterThanRule getGreaterThanRule(final String variable, final int value, final Result result) {
-        return switch (variable) {
-            case "x" -> new GreaterThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.x();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getX();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withX(range);
-                }
-            };
-            case "m" -> new GreaterThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.m();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getM();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withM(range);
-                }
-            };
-            case "a" -> new GreaterThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.a();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getA();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withA(range);
-                }
-            };
-            case "s" -> new GreaterThanRule(value, result) {
-                @Override
-                protected int getValue(final PartRating partRating) {
-                    return partRating.s();
-                }
-
-                @Override
-                protected Range getRange(final PartRatingRange partRatingRange) {
-                    return partRatingRange.getS();
-                }
-
-                @Override
-                protected PartRatingRange withRange(final PartRatingRange partRatingRange, final Range range) {
-                    return partRatingRange.withS(range);
-                }
-            };
+            case '<' -> new LessThanRule(category, value, result);
+            case '>' -> new GreaterThanRule(category, value, result);
             default -> throw new IllegalArgumentException();
         };
     }

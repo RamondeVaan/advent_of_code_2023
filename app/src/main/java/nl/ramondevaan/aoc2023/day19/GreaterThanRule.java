@@ -2,10 +2,10 @@ package nl.ramondevaan.aoc2023.day19;
 
 import java.util.Map;
 
-public abstract class GreaterThanRule extends CompareRule {
+public class GreaterThanRule extends CompareRule {
 
-    public GreaterThanRule(final int compareTo, final Result result) {
-        super(compareTo, result);
+    public GreaterThanRule(final Category category, final int compareTo, final Result result) {
+        super(category, compareTo, result);
     }
 
     @Override
