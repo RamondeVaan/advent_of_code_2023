@@ -27,7 +27,6 @@ public class Day19 {
     public long solve1() {
         return partRatings.stream()
                 .mapToLong(this::solve)
-//                .peek(System.out::println)
                 .sum();
     }
 
