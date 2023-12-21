@@ -1,8 +1,8 @@
 package nl.ramondevaan.aoc2023.day20;
 
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Map;
+import org.apache.commons.math3.util.ArithmeticUtils;
+
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,10 +18,10 @@ public class Day20 {
     public long solve1() {
         var lowPulses = 0L;
         var highPulses = 0L;
-        var memory = initializeMemory();
+        var memory = toOperations(initializeMemory());
 
         for (int i = 0; i < 1000; i++) {
-            final var iteration = pressButton(memory, null);
+            final var iteration = pressButton(memory);
             lowPulses += iteration.lowPulses();
             highPulses += iteration.highPulses();
             memory = iteration.memory();
@@ -31,49 +31,74 @@ public class Day20 {
     }
 
     public long solve2() {
-        final var modulesConnectingToRx = configuration.getConnections().entrySet().stream()
-                .filter(entry -> entry.getValue().stream().map(Module::name).anyMatch("rx"::equals))
-                .map(Map.Entry::getKey).toList();
-
-        if (modulesConnectingToRx.size() != 1 || !(modulesConnectingToRx.getFirst() instanceof ConjunctionModule)) {
-            throw new UnsupportedOperationException("Unexpected input");
-        }
-
-        final var next = modulesConnectingToRx.getFirst();
-        final var modulesConnectingToNext = configuration.getConnections().entrySet().stream()
-                .filter(entry -> entry.getValue().contains(next))
-                .map(Map.Entry::getKey).toList();
-
-        if (modulesConnectingToNext.stream().anyMatch(module -> !(module instanceof ConjunctionModule))) {
-            throw new UnsupportedOperationException("Unexpected input");
-        }
-
-        return modulesConnectingToNext.stream().mapToLong(this::lowPulseCycle).reduce(1L, (left, right) -> left * right);
+        return configuration.getConnections().get(configuration.getBroadcaster()).stream()
+                .peek(System.out::println)
+                .mapToLong(this::toInteger)
+                .reduce(ArithmeticUtils::lcm)
+                .orElseThrow();
     }
 
-    private long lowPulseCycle(final Module checkLowPulse) {
-        long buttonPresses = 0L;
-        var pulseDelivered = false;
-        var memory = initializeMemory();
+    private int toInteger(final Module module) {
+        final var list = new LinkedList<Boolean>();
+        final var visited = new HashSet<Module>();
 
-        while (!pulseDelivered) {
-            final var iteration = pressButton(memory, checkLowPulse);
-            buttonPresses++;
-            memory = iteration.memory();
-            pulseDelivered = iteration.pulseDelivered();
+        Module knownConj = null;
+
+        var current = module;
+
+        while (true) {
+            final var children = configuration.getConnections().get(current);
+            if (visited.contains(current) || children.isEmpty() || children.size() > 2) {
+                throw new UnsupportedOperationException("Unexpected setup");
+            }
+            visited.add(current);
+            if (children.size() == 2) {
+                final var conj = children.stream().filter(i -> i instanceof ConjunctionModule).findFirst().orElseThrow();
+                list.addFirst(true);
+                knownConj = compareConj(knownConj, conj);
+                current = children.stream().filter(i -> i instanceof FlipFlopModule).findFirst().orElseThrow();
+            } else {
+                final var conj = children.stream().filter(i -> i instanceof ConjunctionModule).findFirst().orElse(null);
+                list.addFirst(conj != null);
+                if (conj != null) {
+                    compareConj(knownConj, conj);
+                    break;
+                }
+                current = children.stream().filter(i -> i instanceof FlipFlopModule).findFirst().orElseThrow();
+            }
         }
 
-        return buttonPresses;
+        return toInteger(list);
     }
 
-    private Iteration pressButton(final Map<Module, Memory> memory, final Module checkLowPulse) {
+    private Module compareConj(Module known, Module other) {
+        if (known == null) {
+            return other;
+        }
+        if (other != known) {
+            throw new UnsupportedOperationException("Unexpected setup");
+        }
+        return known;
+    }
+
+    private static int toInteger(final List<Boolean> booleans) {
+        int i = 0;
+        for (final boolean bool : booleans) {
+            i <<= 1;
+            if (bool) {
+                i |= 1;
+            }
+        }
+
+        return i;
+    }
+
+    private Iteration pressButton(final Map<Module, Memory.Operations> operations) {
         final var queue = new ArrayDeque<PulseRequest>();
         queue.add(new PulseRequest("button", PulseType.LOW, configuration.getBroadcaster()));
 
-        var pulseDelivered = false;
         var lowPulses = 0;
         var highPulses = 0;
-        var operations = toOperations(memory);
         PulseRequest current;
 
         while ((current = queue.poll()) != null) {
@@ -82,9 +107,6 @@ public class Day20 {
                 case HIGH -> highPulses++;
             }
             final var dest = current.destination();
-            if (dest == checkLowPulse && current.type() == PulseType.LOW) {
-                pulseDelivered = true;
-            }
             final var pulse = new Pulse(current.from(), current.type());
             final var op = operations.get(dest);
 
@@ -95,7 +117,7 @@ public class Day20 {
             queue.addAll(next);
         }
 
-        return new Iteration(toMemory(operations), lowPulses, highPulses, pulseDelivered);
+        return new Iteration(operations, lowPulses, highPulses);
     }
 
     private Map<Module, Memory.Operations> toOperations(final Map<Module, Memory> memory) {
