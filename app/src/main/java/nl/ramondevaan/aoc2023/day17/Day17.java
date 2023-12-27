@@ -1,23 +1,27 @@
 package nl.ramondevaan.aoc2023.day17;
 
-import nl.ramondevaan.aoc2023.util.Coordinate;
 import nl.ramondevaan.aoc2023.util.Direction;
 import nl.ramondevaan.aoc2023.util.IntMap;
 import nl.ramondevaan.aoc2023.util.IntMapParser;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.PriorityQueue;
 
 public class Day17 {
     private final IntMap heatLossMap;
-    private final Coordinate source;
-    private final Coordinate target;
+    private final int sourceRow;
+    private final int sourceColumn;
+    private final int targetRow;
+    private final int targetColumn;
 
     public Day17(final List<String> lines) {
         final var parser = new IntMapParser();
         heatLossMap = parser.parse(lines);
-        source = Coordinate.of(0, 0);
-        target = Coordinate.of(heatLossMap.rows() - 1, heatLossMap.columns() - 1);
+        sourceRow = 0;
+        sourceColumn = 0;
+        targetRow = heatLossMap.rows() - 1;
+        targetColumn = heatLossMap.columns() - 1;
     }
 
     public long solve1() {
@@ -29,55 +33,84 @@ public class Day17 {
     }
 
     private long solve(final int minBlocksInDirection, final int maxBlocksInDirection) {
-        final var minBlocksInDirectionMinusOne = minBlocksInDirection - 1;
+        final var minBlocksInDirectionMinusOne = Math.max(0, minBlocksInDirection - 1);
         final var maxBlocksInDirectionMinusOne = maxBlocksInDirection - 1;
-        final var numberOfDirections = Direction.values().length;
+        final var directions = Direction.values();
 
-        final var visited = new boolean[heatLossMap.rows()][heatLossMap.columns()][numberOfDirections][maxBlocksInDirection];
-        for (int direction = 0; direction < numberOfDirections; direction++) {
-            Arrays.fill(visited[0][0][direction], true);
-        }
+        final var queue = new PriorityQueue<Step>();
+        final var visited = new int[heatLossMap.rows()][heatLossMap.columns()][directions.length][maxBlocksInDirection];
+        initialize(queue, visited, directions, minBlocksInDirectionMinusOne);
 
-        final var queue = new PriorityQueue<>(Comparator.comparingLong(Step::heatLoss));
-        Step current = new Step(source, Direction.EAST, -1, 0);
+        Step current;
 
-        do {
-            for (final var potentialStep : getPotentialsSteps(current, minBlocksInDirectionMinusOne, maxBlocksInDirectionMinusOne)) {
-                final var newCoordinate = potentialStep.left.apply(current.coordinate());
-                if (!heatLossMap.isWithinRange(newCoordinate)) {
+        while ((current = queue.poll()) != null) {
+            if (current.row() == targetRow && current.column() == targetColumn) {
+                return current.heatLoss();
+            }
+            final var potentialSteps = getPotentialsSteps(current, minBlocksInDirectionMinusOne, maxBlocksInDirectionMinusOne);
+            outer:
+            for (final var potentialStep : potentialSteps) {
+                var newRow = current.row();
+                var newColumn = current.column();
+                var newHeatLoss = current.heatLoss();
+
+                for (int i = 0; i <= potentialStep.steps(); i++) {
+                    newRow += potentialStep.rowOffset();
+                    newColumn += potentialStep.columnOffset();
+
+                    if (!heatLossMap.isWithinRange(newRow, newColumn)) {
+                        continue outer;
+                    }
+
+                    newHeatLoss += heatLossMap.valueAt(newRow, newColumn);
+                }
+                if (visited[newRow][newColumn][potentialStep.direction()][potentialStep.blocks()] != 0 &&
+                        visited[newRow][newColumn][potentialStep.direction()][potentialStep.blocks()] <= newHeatLoss) {
                     continue;
                 }
-                final var newHeatLoss = current.heatLoss() + heatLossMap.valueAt(newCoordinate);
-                if (newCoordinate.equals(target)) {
-                    return newHeatLoss;
-                }
-                if (visited[newCoordinate.row()][newCoordinate.column()][potentialStep.left.ordinal()][potentialStep.right]) {
-                    continue;
-                }
-                visited[newCoordinate.row()][newCoordinate.column()][potentialStep.left.ordinal()][potentialStep.right] = true;
-                if (potentialStep.right >= minBlocksInDirectionMinusOne) {
-                    for (int i = potentialStep.right + 1; i < maxBlocksInDirection; i++) {
-                        visited[newCoordinate.row()][newCoordinate.column()][potentialStep.left.ordinal()][i] = true;
+                visited[newRow][newColumn][potentialStep.direction()][potentialStep.blocks()] = newHeatLoss;
+                if (potentialStep.blocks() >= minBlocksInDirectionMinusOne) {
+                    for (int i = potentialStep.blocks() + 1; i < maxBlocksInDirection; i++) {
+                        visited[newRow][newColumn][potentialStep.direction()][i] = newHeatLoss;
                     }
                 }
-                queue.add(new Step(newCoordinate, potentialStep.left, potentialStep.right, newHeatLoss));
+                queue.add(new Step(newRow, newColumn, directions[potentialStep.direction()], potentialStep.blocks(), newHeatLoss));
             }
-        } while ((current = queue.poll()) != null);
+        }
 
         throw new IllegalStateException();
     }
 
-    private List<ImmutablePair<Direction, Integer>> getPotentialsSteps(final Step current,
-            final int minBlocksInDirectionMinusOne, final int maxBlocksInDirectionMinusOne) {
-        final var potentialSteps = new ArrayList<ImmutablePair<Direction, Integer>>();
-        if (current.blocksInDirection() >= minBlocksInDirectionMinusOne) {
-            potentialSteps.add(ImmutablePair.of(current.direction().right(), 0));
-            potentialSteps.add(ImmutablePair.of(current.direction().left(), 0));
+    private void initialize(final PriorityQueue<Step> queue, final int[][][][] visited, final Direction[] directions,
+            final int minBlocksInDirectionMinusOne) {
+        for (final var direction : directions) {
+            Arrays.fill(visited[0][0][direction.ordinal()], 0);
+            int newRow = sourceRow, newColumn = sourceColumn, newHeatLoss = 0;
+            for (int i = 0; i <= minBlocksInDirectionMinusOne; i++) {
+                newRow += direction.getRowDiff();
+                newColumn += direction.getColumnDiff();
+
+                if (!heatLossMap.isWithinRange(newRow, newColumn)) {
+                    break;
+                }
+
+                newHeatLoss += heatLossMap.valueAt(newRow, newColumn);
+            }
+            queue.add(new Step(newRow, newColumn, direction, minBlocksInDirectionMinusOne, newHeatLoss));
         }
+    }
+
+    private PotentialStep[] getPotentialsSteps(final Step current,
+            final int minBlocksInDirectionMinusOne, final int maxBlocksInDirectionMinusOne) {
+        final Direction right = current.direction().right(), left = current.direction().left();
+        final var rightStep = new PotentialStep(right.getRowDiff(), right.getColumnDiff(), right.ordinal(), minBlocksInDirectionMinusOne, minBlocksInDirectionMinusOne);
+        final var leftStep = new PotentialStep(left.getRowDiff(), left.getColumnDiff(), left.ordinal(), minBlocksInDirectionMinusOne, minBlocksInDirectionMinusOne);
         if (current.blocksInDirection() < maxBlocksInDirectionMinusOne) {
-            potentialSteps.add(ImmutablePair.of(current.direction(), current.blocksInDirection() + 1));
+            final var dir = current.direction();
+            final var forward = new PotentialStep(dir.getRowDiff(), dir.getColumnDiff(), dir.ordinal(), 0, current.blocksInDirection() + 1);
+            return new PotentialStep[]{rightStep, leftStep, forward};
         }
 
-        return potentialSteps;
+        return new PotentialStep[]{rightStep, leftStep};
     }
 }
