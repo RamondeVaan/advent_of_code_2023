@@ -1,9 +1,12 @@
 package nl.ramondevaan.aoc2023.day24;
 
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Status;
 import nl.ramondevaan.aoc2023.util.CombinatoricsUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.MatrixUtils;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Day24 {
@@ -20,56 +23,55 @@ public class Day24 {
 
     public long solve1() {
         return CombinatoricsUtils.pairs(hailstones.size())
-                .filter(pair -> futureIntersectionBetweenBox(hailstones.get(pair.left()), hailstones.get(pair.right())))
+                .map(pair -> Pair.of(hailstones.get(pair.left()), hailstones.get(pair.right())))
+                .filter(pair -> futureIntersectionBetweenBox(pair.getLeft(), pair.getRight()))
                 .count();
     }
 
     public long solve2() {
-        try(final var context = new Context()) {
-            final var solver = context.mkSolver();
-            final var rx = context.mkRealConst("rx");
-            final var ry = context.mkRealConst("ry");
-            final var rz = context.mkRealConst("rz");
-            final var rdx = context.mkRealConst("rdx");
-            final var rdy = context.mkRealConst("rdy");
-            final var rdz = context.mkRealConst("rdz");
+        final var h0 = Hailstone3D.of(hailstones.get(0));
+        final var h1 = Hailstone3D.of(hailstones.get(1));
+        final var h2 = Hailstone3D.of(hailstones.get(2));
 
-            for (int i = 0; i < 3; i++) {
-                final var hailstone = hailstones.get(i);
-                final var x = context.mkReal(hailstone.x());
-                final var y = context.mkReal(hailstone.y());
-                final var z = context.mkReal(hailstone.z());
-                final var dx = context.mkReal(hailstone.dx());
-                final var dy = context.mkReal(hailstone.dy());
-                final var dz = context.mkReal(hailstone.dz());
-                final var t = context.mkRealConst(String.format("t%d", i));
-                solver.add(context.mkEq(context.mkAdd(rx, context.mkMul(rdx, t)), context.mkAdd(x, context.mkMul(dx, t))));
-                solver.add(context.mkEq(context.mkAdd(ry, context.mkMul(rdy, t)), context.mkAdd(y, context.mkMul(dy, t))));
-                solver.add(context.mkEq(context.mkAdd(rz, context.mkMul(rdz, t)), context.mkAdd(z, context.mkMul(dz, t))));
-            }
-            if (solver.check() != Status.SATISFIABLE) {
-                throw new IllegalStateException();
-            }
+        final var c01 = h0.position().subtract(h1.position()).crossProduct(h0.velocity().subtract(h1.velocity()));
+        final var c02 = h0.position().subtract(h2.position()).crossProduct(h0.velocity().subtract(h2.velocity()));
+        final var c12 = h1.position().subtract(h2.position()).crossProduct(h1.velocity().subtract(h2.velocity()));
 
-            final var model = solver.getModel();
-            final var x = Long.valueOf(model.eval(rx, false).toString());
-            final var y = Long.valueOf(model.eval(ry, false).toString());
-            final var z = Long.valueOf(model.eval(rz, false).toString());
+        final var a = MatrixUtils.createRealMatrix(new double[][]{c01.toArray(), c02.toArray(), c12.toArray()});
 
-            return x + y + z;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        final var determinant = (new LUDecomposition(a)).getDeterminant();
+
+        if (Math.abs(determinant) < TOLERANCE) {
+            throw new IllegalArgumentException();
         }
+
+        final var s01 = h0.position().subtract(h1.position()).dotProduct(h0.velocity().crossProduct(h1.velocity()));
+        final var s02 = h0.position().subtract(h2.position()).dotProduct(h0.velocity().crossProduct(h2.velocity()));
+        final var s12 = h1.position().subtract(h2.position()).dotProduct(h1.velocity().crossProduct(h2.velocity()));
+        final var rhs = MatrixUtils.createColumnRealMatrix(new double[] {s01, s02, s12});
+        final var aInv = MatrixUtils.inverse(a);
+        final var w = new Vector3D(aInv.multiply(rhs).getColumn(0));
+        final var wr = new Vector3D(Math.round(w.getX()), Math.round(w.getY()), Math.round(w.getZ()));
+        final var h0v = h0.velocity().subtract(wr);
+        final var h1v = wr.subtract(h1.velocity());
+        final var b = MatrixUtils.createRealMatrix(new double[][] {{h0v.getX(), h1v.getX()}, {h0v.getY(), h1v.getY()}});
+        final var bInv = MatrixUtils.inverse(b);
+        final var diff = h1.position().subtract(h0.position());
+        final var rhs2 = MatrixUtils.createColumnRealMatrix(new double[] {diff.getX(), diff.getY()});
+        final var t = bInv.multiply(rhs2).getEntry(0, 0);
+        final var v = h0v.scalarMultiply(t).add(h0.position());
+
+        return Arrays.stream(v.toArray()).mapToLong(Math::round).sum();
     }
 
     private boolean futureIntersectionBetweenBox(final Hailstone h1, final Hailstone h2) {
         final var n1 = StrictMath.sqrt(h1.dx() * h1.dx() + h1.dy() * h1.dy());
         final var n2 = StrictMath.sqrt(h2.dx() * h2.dx() + h2.dy() * h2.dy());
 
-        final var d1x = n1 * h1.dx();
-        final var d1y = n1 * h1.dy();
-        final var d2x = n2 * h2.dx();
-        final var d2y = n2 * h2.dy();
+        final var d1x = h1.dx() / n1;
+        final var d1y = h1.dy() / n1;
+        final var d2x = h2.dx() / n2;
+        final var d2y = h2.dy() / n2;
 
         final var det = d2x * d1y - d2y * d1x;
 

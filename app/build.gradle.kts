@@ -26,7 +26,6 @@ dependencies {
     implementation(libs.guava)
     implementation("org.apache.commons:commons-lang3:3.14.0")
     implementation("org.apache.commons:commons-math3:3.6.1")
-    implementation("io.github.tudo-aqua:z3-turnkey:4.8.14")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
