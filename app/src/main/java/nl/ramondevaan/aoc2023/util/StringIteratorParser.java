@@ -79,6 +79,14 @@ public class StringIteratorParser {
     }
   }
 
+  public void exhaust(final char character) {
+    char current = iterator.current();
+
+    while (current == character && current != CharacterIterator.DONE) {
+      current = iterator.next();
+    }
+  }
+
   public int parseInteger() {
     return Integer.parseInt(parseNumber());
   }
@@ -118,5 +126,20 @@ public class StringIteratorParser {
     }
 
     return builder.toString();
+  }
+
+  public String parseAlphaNumeric() {
+    final var builder = new StringBuilder();
+    builder.append(iterator.current());
+
+    while (iterator.next() != CharacterIterator.DONE && Character.isLetterOrDigit(iterator.current())) {
+      builder.append(iterator.current());
+    }
+
+    return builder.toString();
+  }
+
+  public int getIndex() {
+    return iterator.getIndex();
   }
 }

@@ -1,9 +1,12 @@
 package nl.ramondevaan.aoc2023.util;
 
+import lombok.EqualsAndHashCode;
+
 import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+@EqualsAndHashCode
 public class IntMap {
 
   private final int[][] map;
@@ -34,7 +37,7 @@ public class IntMap {
 
   public boolean contains(Coordinate coordinate) {
     return coordinate.row() >= 0 && coordinate.row() < rows
-        && coordinate.column() >= 0 && coordinate.column() < columns;
+            && coordinate.column() >= 0 && coordinate.column() < columns;
   }
 
   public int rows() {
@@ -127,6 +130,15 @@ public class IntMap {
     };
   }
 
+  public boolean isWithinRange(final Coordinate coordinate) {
+    return coordinate.row() >= 0 && coordinate.row() < rows &&
+            coordinate.column() >= 0 && coordinate.column() < columns;
+  }
+
+  public boolean isWithinRange(final int row, final int column) {
+    return row >= 0 && row < rows && column >= 0 && column < columns;
+  }
+
   public Builder toBuilder() {
     final var builder = new Builder(rows, columns);
 
@@ -152,6 +164,11 @@ public class IntMap {
       this.columns = columns;
     }
 
+    public Builder set(final Coordinate coordinate, int value) {
+      values[coordinate.row()][coordinate.column()] = value;
+      return this;
+    }
+
     public Builder set(int row, int column, int value) {
       values[row][column] = value;
       return this;
@@ -160,6 +177,14 @@ public class IntMap {
     public Builder flag(int row, int column, int value) {
       values[row][column] |= value;
       return this;
+    }
+
+    public boolean hasFlag(int row, int column, int flag) {
+      return (values[row][column] & flag) == flag;
+    }
+
+    public int get(final Coordinate coordinate) {
+      return values[coordinate.row()][coordinate.column()];
     }
 
     public int get(final int row, final int column) {
@@ -174,13 +199,18 @@ public class IntMap {
     }
 
     public Builder copyFrom(final IntMap map, final int sourceRowOffset, final int rowOffset,
-                            final int sourceColumnOffset, final int columnOffset, final int rows, final int columns) {
+            final int sourceColumnOffset, final int columnOffset, final int rows, final int columns) {
       final int targetRow = rowOffset + rows;
 
       for (int row = rowOffset, sourceRow = sourceRowOffset; row < targetRow; row++, sourceRow++) {
         map.copyInto(sourceRow, values[row], sourceColumnOffset, columnOffset, columns);
       }
       return this;
+    }
+
+    public boolean isWithinRange(final Coordinate coordinate) {
+      return coordinate.row() >= 0 && coordinate.row() < rows &&
+              coordinate.column() >= 0 && coordinate.column() < columns;
     }
 
     public IntMap build() {
